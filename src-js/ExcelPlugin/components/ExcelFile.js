@@ -40,7 +40,9 @@ class ExcelFile extends react_1.default.Component {
         data.forEach((row) => {
             let sheetRow = [];
             react_1.default.Children.forEach(columns, (column) => {
-                const getValue = (row) => row[column.props.value];
+                const getValue = (row) => typeof column.props.value === 'function'
+                    ? column.props.value(row)
+                    : row[column.props.value];
                 const itemValue = getValue(row);
                 sheetRow.push(isNaN(Number(itemValue)) ? itemValue || "" : itemValue);
             });
@@ -83,22 +85,13 @@ class ExcelFile extends react_1.default.Component {
         return this.getFileNameWithExtension(this.state.fileName?.split(".")[0], this.getFileExtension());
     };
     getFileExtension = () => {
-        let extension = this.state.fileExtension;
-        if (this.props.fileExtension?.indexOf(extension) !== -1) {
-            return extension;
+        if (this.props.fileExtension) {
+            return this.state.fileExtension;
         }
-        // file Extension not provided, we need to get it from the filename
-        let extFromFileName = "xlsx";
-        if (extension.length === 0) {
-            const slugs = this.state.fileName.split(".");
-            if (slugs.length === 0) {
-                throw new Error("Invalid file name provided");
-            }
-            extFromFileName = slugs[slugs.length - 1];
-        }
-        const isExtensionValid = this.props.fileExtension?.includes(extFromFileName.toLowerCase());
-        if (isExtensionValid) {
-            return extFromFileName;
+        // Fall back to extension embedded in the filename
+        const slugs = this.state.fileName.split(".");
+        if (slugs.length > 1) {
+            return slugs[slugs.length - 1];
         }
         return this.state.fileExtension;
     };

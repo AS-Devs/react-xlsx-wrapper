@@ -1,48 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.excelSheetFromDataSet = exports.excelSheetFromAoA = exports.dateToNumber = exports.strToArrBuffer = void 0;
+exports.excelSheetFromDataSet = exports.excelSheetFromAoA = exports.dateToNumber = void 0;
 const xlsx_js_style_1 = require("xlsx-js-style");
-/**
- * Converts a string to an ArrayBuffer.
- *
- * @param {string} s The string to convert.
- * @returns {ArrayBuffer} The ArrayBuffer representation of the string.
- *
- * @author Susanta Chakraborty
- * @date 2023-05-31
- */
-const strToArrBuffer = (s) => {
-    // Create a new ArrayBuffer with the same length as the string.
-    let buf = new ArrayBuffer(s.length);
-    // Create a new Uint8Array view of the ArrayBuffer.
-    let view = new Uint8Array(buf);
-    // Iterate over the string and copy each character to the ArrayBuffer.
-    for (let i = 0; i <= s.length; ++i) {
-        view[i] = s.charCodeAt(i) & 0xFF;
-    }
-    // Return the ArrayBuffer.
-    return buf;
-};
-exports.strToArrBuffer = strToArrBuffer;
-/**
- * Converts a string representation of a date to a number of milliseconds since the Unix epoch.
- *
- * @param v - The string representation of the date.
- * @param date1904 - Whether the date is in Excel 1904 format.
- * @returns The number of milliseconds since the Unix epoch.
- *
- * @author Susanta Chakraborty
- * @date 2023-05-31
- */
 const dateToNumber = (v, date1904) => {
-    // If the date is in Excel 1904 format, add 1462 days to the string representation.
-    if (date1904) {
-        v += 1462;
-    }
-    // Parse the string representation of the date into a Date object.
-    let epoch = Date.parse(v);
-    // Calculate the number of milliseconds since the Unix epoch.
-    return (epoch - Number(new Date(Date.UTC(1899, 11, 30)))) / (24 * 60 * 60 * 1000);
+    const epoch = Date.parse(v);
+    const serial = (epoch - Number(new Date(Date.UTC(1899, 11, 30)))) / (24 * 60 * 60 * 1000);
+    // 1904 date system shifts the epoch by 1462 days (applied to the serial, not the string)
+    return date1904 ? serial + 1462 : serial;
 };
 exports.dateToNumber = dateToNumber;
 /**
@@ -77,14 +41,14 @@ const excelSheetFromDataSet = (dataSet, bigHeading, autoFilterForAllColumn) => {
         let xSteps = typeof (dataSetItem.xSteps) === 'number' ? dataSetItem.xSteps : 0;
         let ySteps = typeof (dataSetItem.ySteps) === 'number' ? dataSetItem.ySteps : 0;
         let data = dataSetItem.data;
-        if (dataSet === undefined || dataSet.length === 0) {
+        if (!dataSetItem.columns?.length && !dataSetItem.data?.length) {
             return;
         }
         rowCount += ySteps;
         if (bigHeading?.title && columns.length >= 0) {
             columns.forEach((_, index) => {
                 const cellRef = xlsx_js_style_1.utils.encode_cell({ c: xSteps + index, r: rowCount });
-                fixRange(range, 0, 0, rowCount, xSteps, ySteps);
+                fixRange(range, 0, index, rowCount, xSteps, ySteps);
                 getHeaderCell(bigHeading, cellRef, ws, true, index);
             });
             const mergedRange = { s: { c: xSteps, r: rowCount }, e: { c: xSteps + dataSetItem.columns.length - 1, r: rowCount } };
@@ -101,7 +65,7 @@ const excelSheetFromDataSet = (dataSet, bigHeading, autoFilterForAllColumn) => {
         if (columns.length >= 0) {
             columns.forEach((col, index) => {
                 let cellRef = xlsx_js_style_1.utils.encode_cell({ c: xSteps + index, r: rowCount });
-                fixRange(range, 0, 0, rowCount, xSteps, ySteps);
+                fixRange(range, 0, index, rowCount, xSteps, ySteps);
                 let colTitle = col;
                 if (typeof col === 'object') {
                     //colTitle = col.title; //moved to getHeaderCell
@@ -112,7 +76,6 @@ const excelSheetFromDataSet = (dataSet, bigHeading, autoFilterForAllColumn) => {
             if (autoFilterForAllColumn) {
                 const filterRange = { s: { c: xSteps, r: rowCount }, e: { c: xSteps + dataSetItem.columns.length - 1, r: rowCount } };
                 const filterRef = xlsx_js_style_1.utils.encode_range(filterRange);
-                console.log(filterRef);
                 ws['!autofilter'] = { ref: filterRef };
             }
             rowCount += 1;
@@ -156,34 +119,44 @@ function getHeaderCell(v, cellRef, ws, isHeader, index) {
     ws[cellRef] = cell;
 }
 function getCell(v, cellRef, ws) {
-    const isDate = v instanceof Date;
-    var cell = {
-        t: 's'
-    };
     if (v === null) {
         return;
     }
-    //assume v is indeed the value. for other cases (object, date...) it will be overriden.
+    const isDate = v instanceof Date;
+    const cell = { t: 's' };
+    let cellValue;
     if (typeof v !== 'object') {
+        cellValue = v;
         cell.v = v;
     }
-    // v is not a Date and v is object as well.
-    let tempValue = 'Demo Value';
-    if (typeof v === 'object' && !isDate) {
-        cell.s = v.style;
-        cell.v = v.value;
-        tempValue = v.value;
-    }
-    if (typeof tempValue === 'number') {
-        cell.t = 'n';
-    }
-    else if (typeof tempValue === 'boolean') {
-        cell.t = 'b';
-    }
     else if (isDate) {
+        cellValue = v;
+    }
+    else {
+        cellValue = v.value;
+        cell.v = v.value;
+        cell.s = v.style;
+    }
+    if (isDate) {
         cell.t = 'n';
         cell.z = xlsx_js_style_1.SSF._table[14];
-        cell.v = dateToNumber(tempValue.toString(), false);
+        cell.v = dateToNumber(cellValue.toString(), false);
+    }
+    else if (typeof cellValue === 'number') {
+        if (isNaN(cellValue)) {
+            cell.t = 'e';
+            cell.v = 0x24; // #NUM!
+        }
+        else if (!isFinite(cellValue)) {
+            cell.t = 'e';
+            cell.v = 0x07; // #DIV/0!
+        }
+        else {
+            cell.t = 'n';
+        }
+    }
+    else if (typeof cellValue === 'boolean') {
+        cell.t = 'b';
     }
     else {
         cell.t = 's';
@@ -226,7 +199,15 @@ const excelSheetFromAoA = (data) => {
                 continue;
             }
             let cellRef = xlsx_js_style_1.utils.encode_cell({ c: C, r: R });
-            if (typeof cell.v === 'number') {
+            if (typeof cell.v === 'number' && isNaN(cell.v)) {
+                cell.t = 'e';
+                cell.v = 0x24; // #NUM!
+            }
+            else if (typeof cell.v === 'number' && !isFinite(cell.v)) {
+                cell.t = 'e';
+                cell.v = 0x07; // #DIV/0!
+            }
+            else if (typeof cell.v === 'number') {
                 cell.t = 'n';
             }
             else if (typeof cell.v === 'boolean') {

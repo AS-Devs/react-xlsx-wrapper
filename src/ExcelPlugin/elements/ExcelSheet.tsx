@@ -13,7 +13,9 @@ export default class ExcelSheet extends Component<ExcelSheetProps> {
   constructor(props: ExcelSheetProps) {
     super(props);
 
-    if (!props.children?.every((child) => child.type === ExcelColumn)) {
+    if (!React.Children.toArray(props.children).every(
+      (child) => React.isValidElement(child) && child.type === ExcelColumn
+    )) {
       throw new Error("<ExcelSheet> can only have <ExcelColumn> as children");
     }
   }

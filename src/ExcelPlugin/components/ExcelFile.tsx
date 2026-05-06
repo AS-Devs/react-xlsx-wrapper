@@ -52,7 +52,10 @@ class ExcelFile extends React.Component<ExcelFileProps> {
       React.Children.forEach(
         columns,
         (column: React.ReactElement<ExcelColumnProps>) => {
-          const getValue = (row: any) => row[column.props.value as string];
+          const getValue = (row: any) =>
+            typeof column.props.value === 'function'
+              ? (column.props.value as (row: any) => ExcelValue)(row)
+              : row[column.props.value as string];
           const itemValue = getValue(row);
           sheetRow.push(isNaN(Number(itemValue)) ? itemValue || "" : itemValue);
         }
@@ -113,27 +116,14 @@ class ExcelFile extends React.Component<ExcelFileProps> {
   };
 
   getFileExtension = (): BookType => {
-    let extension = this.state.fileExtension;
-    if (this.props.fileExtension?.indexOf(extension) !== -1) {
-      return extension;
+    if (this.props.fileExtension) {
+      return this.state.fileExtension;
     }
-    // file Extension not provided, we need to get it from the filename
-    let extFromFileName = "xlsx" satisfies BookType;
-    if (extension.length === 0) {
-      const slugs = this.state.fileName.split(".");
-      if (slugs.length === 0) {
-        throw new Error("Invalid file name provided");
-      }
-      extFromFileName = slugs[slugs.length - 1];
+    // Fall back to extension embedded in the filename
+    const slugs = this.state.fileName.split(".");
+    if (slugs.length > 1) {
+      return slugs[slugs.length - 1] as BookType;
     }
-    const isExtensionValid = this.props.fileExtension?.includes(
-      extFromFileName.toLowerCase() as any
-    );
-
-    if (isExtensionValid) {
-      return extFromFileName as BookType;
-    }
-
     return this.state.fileExtension;
   };
 

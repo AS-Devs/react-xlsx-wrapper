@@ -47,7 +47,7 @@ var ExcelFile = /*#__PURE__*/function (_react_1$default$Comp) {
         var sheetRow = [];
         react_1.default.Children.forEach(columns, function (column) {
           var getValue = function getValue(row) {
-            return row[column.props.value];
+            return typeof column.props.value === 'function' ? column.props.value(row) : row[column.props.value];
           };
           var itemValue = getValue(row);
           sheetRow.push(isNaN(Number(itemValue)) ? itemValue || "" : itemValue);
@@ -89,23 +89,13 @@ var ExcelFile = /*#__PURE__*/function (_react_1$default$Comp) {
       return _this.getFileNameWithExtension((_this$state$fileName = _this.state.fileName) === null || _this$state$fileName === void 0 ? void 0 : _this$state$fileName.split(".")[0], _this.getFileExtension());
     });
     (0, _defineProperty2.default)((0, _assertThisInitialized2.default)(_this), "getFileExtension", function () {
-      var _this$props$fileExten, _this$props$fileExten2;
-      var extension = _this.state.fileExtension;
-      if (((_this$props$fileExten = _this.props.fileExtension) === null || _this$props$fileExten === void 0 ? void 0 : _this$props$fileExten.indexOf(extension)) !== -1) {
-        return extension;
+      if (_this.props.fileExtension) {
+        return _this.state.fileExtension;
       }
-      // file Extension not provided, we need to get it from the filename
-      var extFromFileName = "xlsx";
-      if (extension.length === 0) {
-        var slugs = _this.state.fileName.split(".");
-        if (slugs.length === 0) {
-          throw new Error("Invalid file name provided");
-        }
-        extFromFileName = slugs[slugs.length - 1];
-      }
-      var isExtensionValid = (_this$props$fileExten2 = _this.props.fileExtension) === null || _this$props$fileExten2 === void 0 ? void 0 : _this$props$fileExten2.includes(extFromFileName.toLowerCase());
-      if (isExtensionValid) {
-        return extFromFileName;
+      // Fall back to extension embedded in the filename
+      var slugs = _this.state.fileName.split(".");
+      if (slugs.length > 1) {
+        return slugs[slugs.length - 1];
       }
       return _this.state.fileExtension;
     });
