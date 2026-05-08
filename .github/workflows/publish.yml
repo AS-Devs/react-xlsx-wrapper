@@ -9,11 +9,9 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [ lts/* ]
-
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
@@ -29,6 +27,9 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/main' }}
     needs: [ quality ]
+    permissions:
+      contents: read
+      id-token: write # ← required for OIDC trusted publishing
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js (LTS)
@@ -36,9 +37,10 @@ jobs:
         with:
           node-version: lts/*
           cache: "npm"
+          registry-url: "https://registry.npmjs.org"
       - run: npm ci
       - run: npm run build
       - run: npm run semantic-release
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }} # keep for semantic-release (see note below)
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
