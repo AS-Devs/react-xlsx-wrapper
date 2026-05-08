@@ -61,6 +61,10 @@
     "react-dom": ">=16.8.0"
   },
   "devDependencies": {
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/github": "^12.0.6",
+    "@semantic-release/npm": "^13.1.5",
+    "@semantic-release/release-notes-generator": "^14.1.0",
     "@types/react": "^18.3.28",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "8.41.0",
@@ -70,7 +74,7 @@
     "eslint-watch": "8.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "semantic-release": "^21.1.2",
+    "semantic-release": "^25.0.3",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   },
@@ -83,7 +87,7 @@
     "lint:fix": "eslint . --fix",
     "lint:watch": "esw -w lib/**",
     "commit": "git-cz",
-    "semantic-release": "semantic-release --branches main",
+    "semantic-release": "semantic-release",
     "acp": "git add . && npm run commit && git push"
   },
   "config": {
