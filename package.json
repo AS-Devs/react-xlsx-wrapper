@@ -1,9 +1,30 @@
 {
   "name": "react-xlsx-wrapper",
   "version": "2.0.2",
-  "main": "dist/index.js",
-  "types": "types/index.d.ts",
   "description": "An important tool to make it easy to work with excel file formats. It supports lots of file formats as well. As this an wrapper around JS API for XLSX package. It does supports basic Cell styling as well as width based on characters. etc. Can be used in any Typescript project now, as we have migrated whole library to supports type safety. Best works with ReactJS, NextJS etc.",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "types/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./types/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./types/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "types",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/AS-Devs/react-xlsx-wrapper.git"
@@ -14,7 +35,7 @@
     "xlsx",
     "xls",
     "csv",
-    "stying",
+    "styling",
     "react-dataset",
     "react-export",
     "react-excel-export"
@@ -36,15 +57,10 @@
     "xlsx-js-style": "^1.2.0"
   },
   "peerDependencies": {
-    "@babel/runtime": "^7.22.5"
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.21.5",
-    "@babel/core": "^7.22.1",
-    "@babel/plugin-transform-runtime": "^7.22.2",
-    "@babel/preset-env": "^7.22.2",
-    "@babel/preset-react": "^7.22.3",
-    "@babel/preset-typescript": "^7.21.5",
     "@types/react": "^18.2.7",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "8.41.0",
@@ -55,16 +71,18 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "semantic-release": "^21.0.3",
+    "tsup": "^8.5.1",
     "typescript": "^5.0.4"
   },
   "scripts": {
-    "clean": "rm -rf ./dist && mkdir ./dist",
-    "commit": "git-cz",
-    "build": "tsc && babel src-js -d dist",
-    "build:watch": "babel -w src-js -d dist",
+    "clean": "rm -rf dist",
+    "build": "tsup",
+    "build:watch": "tsup --watch",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:watch": "esw -w lib/**",
+    "commit": "git-cz",
     "semantic-release": "semantic-release --branches main",
     "acp": "git add . && npm run commit && git push"
   },

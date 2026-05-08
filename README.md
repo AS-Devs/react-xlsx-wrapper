@@ -25,6 +25,75 @@ pnpm add react-xlsx-wrapper@latest
 yarn add react-xlsx-wrapper@latest
 ```
 
+## Framework Support
+
+### Next.js (App Router)
+
+This library is a **client-only** component — it uses browser APIs (`Blob`, `URL.createObjectURL`) to trigger downloads. Wrap it with `'use client'` in your component:
+
+```tsx
+'use client';
+
+import { ExcelFile, ExcelSheet, ExcelColumn } from 'react-xlsx-wrapper';
+
+export function ExportButton({ data }: { data: any[] }) {
+  return (
+    <ExcelFile filename="report" element={<button>Download</button>}>
+      <ExcelSheet name="Sheet1" data={data}>
+        <ExcelColumn label="Name" value="name" />
+        <ExcelColumn label="Email" value="email" />
+      </ExcelSheet>
+    </ExcelFile>
+  );
+}
+```
+
+If the parent is a Server Component, lazy-load to avoid SSR:
+
+```tsx
+import dynamic from 'next/dynamic';
+
+const ExportButton = dynamic(() => import('./ExportButton'), { ssr: false });
+```
+
+> **Note:** Server-side Excel generation (e.g. from an API route) is not supported. The library is designed for browser downloads only.
+
+### Vite
+
+Works out of the box with Vite via the ESM entry point (`dist/index.mjs`). No additional config needed.
+
+If you encounter CJS interop warnings with an older version of this package, add to `vite.config.ts`:
+
+```ts
+optimizeDeps: { include: ['react-xlsx-wrapper', 'xlsx-js-style'] }
+```
+
+### TanStack (Router / Query / Table)
+
+Fully compatible. Pass filtered/sorted rows from TanStack Table directly as the `data` prop:
+
+```tsx
+'use client'; // if using Next.js App Router
+
+import { useReactTable, getCoreRowModel } from '@tanstack/react-table';
+import { ExcelFile, ExcelSheet, ExcelColumn } from 'react-xlsx-wrapper';
+
+export function DataTable({ data }) {
+  const table = useReactTable({ data, columns, getCoreRowModel: getCoreRowModel() });
+
+  return (
+    <>
+      {/* your table UI */}
+      <ExcelFile filename="export" element={<button>Export</button>}>
+        <ExcelSheet name="Data" data={table.getFilteredRowModel().rows.map(r => r.original)}>
+          <ExcelColumn label="Name" value="name" />
+        </ExcelSheet>
+      </ExcelFile>
+    </>
+  );
+}
+```
+
 ## Code Examples
 
 - [Simple Excel Export](examples/simple_excel_export_01.md)

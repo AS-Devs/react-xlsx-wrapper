@@ -1,3 +1,5 @@
+'use client';
+
 import React from "react";
 import { utils, writeFile } from "xlsx-js-style";
 import type { BookType, WorkSheet } from "xlsx-js-style";
@@ -68,6 +70,7 @@ class ExcelFile extends React.Component<ExcelFileProps> {
   };
 
   download = () => {
+    if (typeof window === 'undefined') return;
     const wb = utils.book_new();
     const fileName = this.getFileName();
     const fileExtension: BookType = this.getFileExtension();
