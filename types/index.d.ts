@@ -52,7 +52,7 @@ declare module 'react-xlsx-wrapper' {
 
   export interface ExcelColumnProps {
     label: string;
-    value: ExcelValue;
+    value: string | ((row: any) => ExcelValue);
   }
 
   export interface ExcelStyle {
@@ -118,8 +118,8 @@ declare module 'react-xlsx-wrapper' {
 
   /* ExcelBorder */
   export interface ExcelBorder {
-    style: ExcelBorderStyle;
-    color: ExcelColorSpec;
+    style?: ExcelBorderStyle;
+    color?: ExcelColorSpec;
   }
 
   export type ExcelBorderStyle =

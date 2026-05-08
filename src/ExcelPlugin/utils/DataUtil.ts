@@ -2,50 +2,11 @@ import type { ExcelCellData, ExcelSheetCol, ExcelSheetData, ExcelStyle, ExcelVal
 import { utils, SSF } from "xlsx-js-style";
 import type { CellObject, WorkSheet, ColInfo, Range } from "xlsx-js-style";
 
-
-
-/**
- * Converts a string to an ArrayBuffer.
- *
- * @param {string} s The string to convert.
- * @returns {ArrayBuffer} The ArrayBuffer representation of the string.
- * 
- * @author Susanta Chakraborty
- * @date 2023-05-31
- */
-const strToArrBuffer = (s: string): ArrayBuffer => {
-    // Create a new ArrayBuffer with the same length as the string.
-    let buf = new ArrayBuffer(s.length);
-    // Create a new Uint8Array view of the ArrayBuffer.
-    let view = new Uint8Array(buf);
-
-    // Iterate over the string and copy each character to the ArrayBuffer.
-    for (let i = 0; i <= s.length; ++i) {
-        view[i] = s.charCodeAt(i) & 0xFF;
-    }
-    // Return the ArrayBuffer.
-    return buf;
-};
-
-/**
- * Converts a string representation of a date to a number of milliseconds since the Unix epoch.
- *
- * @param v - The string representation of the date.
- * @param date1904 - Whether the date is in Excel 1904 format.
- * @returns The number of milliseconds since the Unix epoch.
- *
- * @author Susanta Chakraborty
- * @date 2023-05-31
- */
 const dateToNumber = (v: string, date1904?: boolean): number => {
-    // If the date is in Excel 1904 format, add 1462 days to the string representation.
-    if (date1904) {
-        v += 1462;
-    }
-    // Parse the string representation of the date into a Date object.
-    let epoch = Date.parse(v);
-    // Calculate the number of milliseconds since the Unix epoch.
-    return (epoch - Number(new Date(Date.UTC(1899, 11, 30)))) / (24 * 60 * 60 * 1000);
+    const epoch = Date.parse(v);
+    const serial = (epoch - Number(new Date(Date.UTC(1899, 11, 30)))) / (24 * 60 * 60 * 1000);
+    // 1904 date system shifts the epoch by 1462 days (applied to the serial, not the string)
+    return date1904 ? serial + 1462 : serial;
 };
 
 /**
@@ -82,7 +43,7 @@ const excelSheetFromDataSet = (dataSet: ExcelSheetData[], bigHeading?: ExcelShee
         let xSteps = typeof(dataSetItem.xSteps) === 'number' ? dataSetItem.xSteps : 0;
         let ySteps = typeof(dataSetItem.ySteps) === 'number' ? dataSetItem.ySteps : 0;
         let data = dataSetItem.data;
-        if (dataSet === undefined || dataSet.length === 0) {
+        if (!dataSetItem.columns?.length && !dataSetItem.data?.length) {
             return;
         }
 
@@ -91,7 +52,7 @@ const excelSheetFromDataSet = (dataSet: ExcelSheetData[], bigHeading?: ExcelShee
         if(bigHeading?.title && columns.length >= 0) {
             columns.forEach((_, index) => {
                 const cellRef = utils.encode_cell({ c: xSteps + index, r: rowCount });
-                fixRange(range, 0, 0, rowCount, xSteps, ySteps);
+                fixRange(range, 0, index, rowCount, xSteps, ySteps);
                 getHeaderCell(bigHeading, cellRef, ws, true, index);
             });
 
@@ -111,7 +72,7 @@ const excelSheetFromDataSet = (dataSet: ExcelSheetData[], bigHeading?: ExcelShee
         if (columns.length >= 0) {
             columns.forEach((col, index) => {
                 let cellRef = utils.encode_cell({ c: xSteps + index, r: rowCount });
-                fixRange(range, 0, 0, rowCount, xSteps, ySteps);
+                fixRange(range, 0, index, rowCount, xSteps, ySteps);
                 let colTitle = col;
                 if (typeof col === 'object'){
                     //colTitle = col.title; //moved to getHeaderCell
@@ -123,7 +84,6 @@ const excelSheetFromDataSet = (dataSet: ExcelSheetData[], bigHeading?: ExcelShee
             if(autoFilterForAllColumn){
                 const filterRange: Range = { s: { c: xSteps, r: rowCount }, e: { c: xSteps + dataSetItem.columns.length - 1, r: rowCount } };
                 const filterRef = utils.encode_range(filterRange);
-                console.log(filterRef);
                 ws['!autofilter'] = { ref: filterRef };
             }
 
@@ -173,35 +133,41 @@ function getHeaderCell(v: ExcelSheetCol, cellRef: string, ws: WorkSheet,isHeader
 
 
 function getCell(v: ExcelCellData, cellRef: string, ws: WorkSheet): void {
-    const isDate = v instanceof Date ;
-
-    var cell: CellObject = { 
-        t: 's'
-    };
     if (v === null) {
         return;
     }
-    
-    //assume v is indeed the value. for other cases (object, date...) it will be overriden.
+
+    const isDate = v instanceof Date;
+    const cell: CellObject = { t: 's' };
+
+    let cellValue: ExcelValue;
     if (typeof v !== 'object') {
+        cellValue = v;
         cell.v = v;
-    }
-    // v is not a Date and v is object as well.
-    let tempValue: Date | number | string | boolean = 'Demo Value';
-    if (typeof v === 'object' && !isDate) {
-        cell.s = v.style;
-        cell.v = v.value;
-        tempValue = v.value;
-    }
-    
-    if (typeof tempValue === 'number') {
-        cell.t = 'n';
-    } else if (typeof tempValue === 'boolean') {
-        cell.t = 'b';
     } else if (isDate) {
+        cellValue = v as Date;
+    } else {
+        cellValue = v.value;
+        cell.v = v.value;
+        cell.s = v.style;
+    }
+
+    if (isDate) {
         cell.t = 'n';
         cell.z = SSF._table[14];
-        cell.v = dateToNumber(tempValue.toString(), false);
+        cell.v = dateToNumber((cellValue as Date).toString(), false);
+    } else if (typeof cellValue === 'number') {
+        if (isNaN(cellValue)) {
+            cell.t = 'e';
+            cell.v = 0x24; // #NUM!
+        } else if (!isFinite(cellValue)) {
+            cell.t = 'e';
+            cell.v = 0x07; // #DIV/0!
+        } else {
+            cell.t = 'n';
+        }
+    } else if (typeof cellValue === 'boolean') {
+        cell.t = 'b';
     } else {
         cell.t = 's';
     }
@@ -254,7 +220,13 @@ const excelSheetFromAoA = (data: ExcelValue[][]): WorkSheet => {
             }
 
             let cellRef = utils.encode_cell({ c: C, r: R });
-            if (typeof cell.v === 'number') {
+            if (typeof cell.v === 'number' && isNaN(cell.v as number)) {
+                cell.t = 'e';
+                cell.v = 0x24; // #NUM!
+            } else if (typeof cell.v === 'number' && !isFinite(cell.v as number)) {
+                cell.t = 'e';
+                cell.v = 0x07; // #DIV/0!
+            } else if (typeof cell.v === 'number') {
                 cell.t = 'n';
             } else if (typeof cell.v === 'boolean') {
                 cell.t = 'b';
@@ -278,4 +250,4 @@ const excelSheetFromAoA = (data: ExcelValue[][]): WorkSheet => {
 };
 
 
-export { strToArrBuffer, dateToNumber, excelSheetFromAoA, excelSheetFromDataSet };
+export { dateToNumber, excelSheetFromAoA, excelSheetFromDataSet };
