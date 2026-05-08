@@ -61,18 +61,18 @@
     "react-dom": ">=16.8.0"
   },
   "devDependencies": {
-    "@types/react": "^18.2.7",
+    "@types/react": "^18.3.28",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "8.41.0",
-    "eslint-plugin-import": "2.27.5",
-    "eslint-plugin-jsx-a11y": "6.7.1",
-    "eslint-plugin-react": "7.32.2",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
     "eslint-watch": "8.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "semantic-release": "^21.0.3",
+    "semantic-release": "^21.1.2",
     "tsup": "^8.5.1",
-    "typescript": "^5.0.4"
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "clean": "rm -rf dist",
