@@ -39,7 +39,6 @@ jobs:
         with:
           node-version: lts/*
           cache: "npm"
-          registry-url: "https://registry.npmjs.org"
       - run: npm ci
       - run: npm run build
       - run: npm run semantic-release
