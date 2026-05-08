@@ -1,6 +1,6 @@
 {
   "name": "react-xlsx-wrapper",
-  "version": "2.0.2",
+  "version": "2.6.0",
   "description": "An important tool to make it easy to work with excel file formats. It supports lots of file formats as well. As this an wrapper around JS API for XLSX package. It does supports basic Cell styling as well as width based on characters. etc. Can be used in any Typescript project now, as we have migrated whole library to supports type safety. Best works with ReactJS, NextJS etc.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
