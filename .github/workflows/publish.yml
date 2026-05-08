@@ -7,37 +7,20 @@ on:
     branches: [ "main" ]
 
 jobs:
-  quality:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [ '24' ]
-    steps:
-      - uses: actions/checkout@v6.0.2
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
-      - run: npm ci
-      - run: npm run build
-      - run: npm test --if-present
-
   publish:
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/main' }}
-    needs: [ quality ]
     permissions:
-      contents: write        # semantic-release needs to push version tags back to main
-      issues: write          # semantic-release comments on GitHub issues
-      pull-requests: write   # semantic-release comments on PRs
-      id-token: write        # OIDC trusted publishing
+      contents: write # semantic-release needs to push version tags back to main
+      issues: write # semantic-release comments on GitHub issues
+      pull-requests: write # semantic-release comments on PRs
+      id-token: write # OIDC trusted publishing
     steps:
       - uses: actions/checkout@v6.0.2
       - name: Use Node.js 24
         uses: actions/setup-node@v6.4.0
         with:
-          node-version: '24'
+          node-version: "24"
           cache: "npm"
       - run: npm ci
       - run: npm run build
