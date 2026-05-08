@@ -28,8 +28,10 @@ jobs:
     if: ${{ github.ref == 'refs/heads/main' }}
     needs: [ quality ]
     permissions:
-      contents: read
-      id-token: write # ← required for OIDC trusted publishing
+      contents: write        # semantic-release needs to push version tags back to main
+      issues: write          # semantic-release comments on GitHub issues
+      pull-requests: write   # semantic-release comments on PRs
+      id-token: write        # OIDC trusted publishing
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js (LTS)
